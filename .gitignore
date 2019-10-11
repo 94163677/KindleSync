@@ -1,0 +1,22 @@
+# windows生成的缩略图文件
+Thunbs.db
+
+# Java class 文件
+*.class
+
+# 生成目录
+bin/
+debug/
+build/
+gen/
+out/
+release/
+
+# 日志文件
+*.log
+
+# macOS .DS_Store 文件
+.DS_Store
+
+# office的临时文件
+~$*
