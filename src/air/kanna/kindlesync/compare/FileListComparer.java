@@ -30,8 +30,6 @@ public class FileListComparer {
         Collections.sort(baseFileList, comparator);
         Collections.sort(destFileList, comparator);
         
-        
-        
         for(File file : baseFileList) {
             index = Collections.binarySearch(destFileList, file, 
                     (File a, File b) -> a.getAbsolutePath().substring(destPathLength).compareTo(b.getAbsolutePath().substring(basePathLength)));

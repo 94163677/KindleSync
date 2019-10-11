@@ -3,11 +3,16 @@ package air.kanna.kindlesync;
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
 import java.awt.GridLayout;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.DefaultListModel;
@@ -19,7 +24,10 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -30,6 +38,7 @@ import air.kanna.kindlesync.compare.FileOperationItem;
 import air.kanna.kindlesync.config.SyncConfig;
 import air.kanna.kindlesync.config.SyncConfigService;
 import air.kanna.kindlesync.config.impl.SyncConfigServicePropertiesImpl;
+import air.kanna.kindlesync.execute.JaveExecute;
 import air.kanna.kindlesync.execute.OperationExecute;
 import air.kanna.kindlesync.scan.PathScanner;
 import air.kanna.kindlesync.scan.filter.FileNameExcludeFilter;
@@ -40,7 +49,6 @@ import air.kanna.kindlesync.scan.filter.FileTypeFilter;
 import air.kanna.kindlesync.scan.filter.NullDirectoryFilter;
 import air.kanna.kindlesync.scan.filter.ScanFilter;
 import air.kanna.kindlesync.util.Nullable;
-import javax.swing.JProgressBar;
 
 public class StartUp {
     private static final Logger logger = Logger.getLogger(StartUp.class);
@@ -86,6 +94,7 @@ public class StartUp {
     private List<File> fileListB;
     private List<FileOperationItem> result;
     private JProgressBar executeProcess;
+    private JLabel processTextTb;
     
     /**
      * Create the application.
@@ -320,9 +329,133 @@ public class StartUp {
         executeBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent event) {
+                if(listModel.size() <= 0) {
+                    JOptionPane.showMessageDialog(frame, "列表中没有可用的操作", "提示", JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                }
                 
+                executeBtn.setEnabled(false);
+                final List<FileOperationItem> executeList = new ArrayList<>();
+                
+                for(int i=0; i<listModel.size(); i++) {
+                    executeList.add(listModel.get(i));
+                }
+                
+                (new Thread() {
+                    @Override
+                    public void run() {
+                        try {
+                            List<String> execResult = executer.execute(pathA, pathB, executeList);
+                            StringBuilder sb = new StringBuilder();
+                            String clipText = null;
+                            boolean isAllSuccess = false;
+                            int count = 0;
+                            
+                            for(int i=0; i<execResult.size(); i++) {
+                                String res = execResult.get(i);
+                                if(res == null || res.length() <= 0) {
+                                    count++;
+                                    continue;
+                                }
+                                sb.append("第").append(i + 1).append("个文件失败：").append(res).append('\n');
+                            }
+                            
+                            if(sb.length() <= 0) {
+                                sb.append("所有文件同步成功");
+                                isAllSuccess = true;
+                            }else {
+                                StringBuilder sb2 = new StringBuilder();
+                                sb2.append("同步成功").append(count)
+                                    .append("个文件，失败").append(execResult.size() - count)
+                                    .append("个文件，失败原因：\n");
+                                sb.insert(0, sb2.toString());
+                            }
+                            
+                            clipText = sb.toString();
+                            JOptionPane.showMessageDialog(frame, clipText, "同步结果", JOptionPane.INFORMATION_MESSAGE);
+                            
+                            if(!isAllSuccess) {
+                                setSysClipboardText(clipText);
+                                JOptionPane.showMessageDialog(frame, "已将失败记录复制到剪切板", "提示", JOptionPane.INFORMATION_MESSAGE);
+                            }
+                        }catch(Exception e) {
+                            JOptionPane.showMessageDialog(frame, "同步出现错误：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                            logger.error("同步出现错误", e);
+                        }finally {
+                            executeBtn.setEnabled(true);
+                        }
+                    }
+                }).start();
             }
         });
+        
+        ((JaveExecute)executer).setListener(new ProcessListener() {
+            private int current = 0;
+            private int max = 100;
+            
+            @Override
+            public void setMax(int max) {
+                if(max <= 0){
+                    throw new IllegalArgumentException("ProcessBar's max must > 0");
+                }
+                this.max = max;
+                this.current = 0;
+                
+                executeProcess.setMaximum(max);
+                executeProcess.setMinimum(0);
+                executeProcess.setValue(0);
+                processTextTb.setText("--");
+            }
+
+            @Override
+            public void next(String message) {
+                current++;
+                if(current > max){
+                    executeProcess.setValue(max);
+                }else{
+                    executeProcess.setValue(current);
+                }
+                showFile();
+            }
+
+            @Override
+            public void setPosition(int current, String message) {
+                if(current <= 0){
+                    executeProcess.setValue(0);
+                    this.current = 0;
+                }else
+                if(current > max){
+                    executeProcess.setValue(max);
+                    this.current = max;
+                }else{
+                    executeProcess.setValue(current);
+                    this.current = current;
+                }
+                showFile();
+            }
+
+            @Override
+            public void finish(String message) {
+                executeProcess.setValue(max);
+                processTextTb.setText("--");
+            }
+            
+            private void showFile() {
+                if(current >= 0 && current < listModel.size()) {
+                    StringBuilder sb = new StringBuilder();
+                    
+                    sb.append(current).append('/').append(max).append(" : ");
+                    sb.append(listModel.get(current).getFile().getAbsolutePath());
+                    processTextTb.setText(sb.toString());
+                }
+            }
+        });
+    }
+    
+    public static void setSysClipboardText(String writeMe) {
+        Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
+        Transferable tText = new StringSelection(writeMe);
+        clip.setContents(tText, null);
     }
     
     private void startScan() {
@@ -484,9 +617,10 @@ public class StartUp {
         
         operResultList = new JList<>();
         JPanel listPanel = new JPanel();
+        JScrollPane jScrollPane = new JScrollPane(operResultList);
         listPanel.setLayout(new BorderLayout(0, 0));
         frame.getContentPane().add(listPanel, BorderLayout.CENTER);
-        listPanel.add(operResultList, BorderLayout.CENTER);
+        listPanel.add(jScrollPane, BorderLayout.CENTER);
         
         JPanel operPanel = new JPanel();
         frame.getContentPane().add(operPanel, BorderLayout.EAST);
@@ -533,12 +667,16 @@ public class StartUp {
         listModel = new DefaultListModel<>();
         comparer = new FileListComparer();
         scanner = new PathScanner();
-        executer = new OperationExecute();
+        executer = new JaveExecute();
         
         operResultList.setModel(listModel);
         
         executeProcess = new JProgressBar();
         listPanel.add(executeProcess, BorderLayout.SOUTH);
+        
+        processTextTb = new JLabel("--");
+        processTextTb.setHorizontalAlignment(SwingConstants.CENTER);
+        listPanel.add(processTextTb, BorderLayout.NORTH);
     }
 
     /**

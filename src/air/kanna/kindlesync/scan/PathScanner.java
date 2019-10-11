@@ -14,18 +14,27 @@ public class PathScanner extends MutiScanFilter<File>{
     
     public List<File> scan(File basePath){
         List<File> fileList = new ArrayList<>();
-        scan(fileList, basePath);
+        scan(fileList, basePath, 0);
         return fileList;
     }
     
-    private void scan(List<File> fileList, File basePath) {
+    private void scan(List<File> fileList, File basePath, int deep) {
         if(basePath == null) {
             return;
         }
-        if(!accept(basePath)) {
-            return;
+        
+        if(deep == 0) {
+            fileList.add(basePath);
+            if(!accept(basePath)) {
+                return;
+            }
+        }else {
+            if(!accept(basePath)) {
+                return;
+            }
+            fileList.add(basePath);
         }
-        fileList.add(basePath);
+        
         if(basePath.isDirectory()) {
             File[] files = basePath.listFiles();
             for(int i=0; i<files.length; i++) {
@@ -36,7 +45,7 @@ public class PathScanner extends MutiScanFilter<File>{
                         || files[i].getName().equals("..")) {
                     continue;
                 }
-                scan(fileList, files[i]);
+                scan(fileList, files[i], deep + 1);
             }
         }
     }

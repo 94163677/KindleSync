@@ -18,7 +18,7 @@ public class OperationExecuteTest {
         
         List<FileOperationItem> list = new ArrayList<>();
         FileOperationItem item = null;
-        OperationExecute exec = new OperationExecute();
+        JaveExecute exec = new JaveExecute();
         
         item = new FileOperationItem();
         item.setOperation(FileOperation.ADD);
