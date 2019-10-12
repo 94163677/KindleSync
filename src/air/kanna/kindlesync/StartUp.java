@@ -34,6 +34,7 @@ import javax.swing.event.DocumentListener;
 import org.apache.log4j.Logger;
 
 import air.kanna.kindlesync.compare.FileListComparer;
+import air.kanna.kindlesync.compare.FileOperation;
 import air.kanna.kindlesync.compare.FileOperationItem;
 import air.kanna.kindlesync.config.SyncConfig;
 import air.kanna.kindlesync.config.SyncConfigService;
@@ -444,8 +445,8 @@ public class StartUp {
                 if(current >= 0 && current < listModel.size()) {
                     StringBuilder sb = new StringBuilder();
                     
-                    sb.append(current).append('/').append(max).append(" : ");
-                    sb.append(listModel.get(current).getFile().getAbsolutePath());
+                    sb.append(current).append('/').append(max).append("，正在处理：");
+                    sb.append(listModel.get(current).getFile().getName());
                     processTextTb.setText(sb.toString());
                 }
             }
@@ -466,8 +467,15 @@ public class StartUp {
         
         result = comparer.getCompareResult(pathA, pathB, fileListA, fileListB);
         
+        boolean isUnDelete = undeleteCb.isSelected();
+        
         listModel.clear();
         for(FileOperationItem item : result) {
+            if(isUnDelete) {
+                if(item.getOperation() != null && item.getOperation() == FileOperation.DEL) {
+                    continue;
+                }
+            }
             listModel.addElement(item);
         }
 
