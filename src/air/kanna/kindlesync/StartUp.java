@@ -168,7 +168,7 @@ public class StartUp {
         logger.info("config file: " + configFile.getAbsolutePath());
         configService = new SyncConfigServicePropertiesImpl(configFile);
         
-        config = configService.getSyncConfig();
+        config = configService.getConfig();
         if(config == null) {
             config = new SyncConfig();
         }
@@ -183,7 +183,7 @@ public class StartUp {
             @Override
             public void windowClosing(WindowEvent e) {
                 saveToConfig();
-                if(!configService.saveSyncConfig(config)) {
+                if(!configService.saveConfig(config)) {
                     logger.error("Save Config to file error");
                 }
                 System.exit(0);
