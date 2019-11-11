@@ -15,9 +15,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -63,8 +65,6 @@ public class StartUp {
     
     private JFrame frame;
     private JList<FileOperationItem> operResultList;
-    private JTextField basePathTf;
-    private JTextField destPathTf;
     private JButton baseSelectPathBtn;
     private JButton destSelectPathBtn;
     private JButton destToBaseBtn;
@@ -96,6 +96,8 @@ public class StartUp {
     private List<FileOperationItem> result;
     private JProgressBar executeProcess;
     private JLabel processTextTb;
+    private JComboBox<String> basePathCb;
+    private JComboBox<String> destPathCb;
     
     /**
      * Create the application.
@@ -106,13 +108,47 @@ public class StartUp {
         initControl();
     }
     
+    private void setStringsToComboBox(String strings, JComboBox<String> box) {
+        if(box == null || Nullable.isNull(strings)) {
+            return;
+        }
+        String[] paths = strings.split(";");
+        if(paths == null) {
+            paths = new String[] {strings};
+        }
+        DefaultComboBoxModel<String> model = (DefaultComboBoxModel<String>)box.getModel();
+        model.removeAllElements();
+        for(int i=0; i<paths.length; i++) {
+            if(Nullable.isNull(paths[i])) {
+                continue;
+            }
+            model.addElement(paths[i]);
+        }
+        box.setSelectedIndex(0);
+    }
+    
+    private String getStringsFromComboBox(JComboBox<String> box) {
+        if(box == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        if(box.getSelectedIndex() >= 0) {
+            sb.append(box.getSelectedItem()).append(';');
+        }
+        for(int i=0; i<box.getItemCount(); i++) {
+            if(i == box.getSelectedIndex()) {
+                continue;
+            }
+            sb.append(box.getItemAt(i)).append(';');
+        }
+        return sb.toString();
+    }
+    
     private void setFromConfig() {
-        if(!Nullable.isNull(config.getBasePath())) {
-            basePathTf.setText(config.getBasePath());
-        }
-        if(!Nullable.isNull(config.getDescPath())) {
-            destPathTf.setText(config.getDescPath());
-        }
+        
+        setStringsToComboBox(config.getBasePath(), basePathCb);
+        setStringsToComboBox(config.getDescPath(), destPathCb);
+
         if(!Nullable.isNull(config.getIncludeStr())) {
             scanIncludeTf.setText(config.getIncludeStr());
         }
@@ -131,8 +167,9 @@ public class StartUp {
     }
     
     private void saveToConfig() {
-        config.setBasePath(basePathTf.getText());
-        config.setDescPath(destPathTf.getText());
+        config.setBasePath(getStringsFromComboBox(basePathCb));
+        config.setDescPath(getStringsFromComboBox(destPathCb));
+        
         config.setIncludeStr(scanIncludeTf.getText());
         config.setExcludeStr(scanExcludeTf.getText());
         
@@ -176,6 +213,38 @@ public class StartUp {
         setFromConfig();
     }
     
+    private void selectAndAddPath(JComboBox<String> box) {
+        File old = null;
+        if(box.getSelectedIndex() >= 0) {
+            if(!Nullable.isNull((String)box.getSelectedItem())) {
+                old = new File((String)box.getSelectedItem());
+            }
+        }
+        if(old == null) {
+            old = new File(".");
+        }
+        
+        chooser.setSelectedFile(old);
+        if(JFileChooser.APPROVE_OPTION == chooser.showOpenDialog(frame)){
+            File selected = chooser.getSelectedFile();
+            String path = selected.getAbsolutePath();
+            int findIdx = -1;
+            for(int i=0; i<box.getItemCount(); i++) {
+                if(path.equals(box.getItemAt(i))) {
+                    findIdx = i;
+                    break;
+                }
+            }
+            if(findIdx >= 0) {
+                box.setSelectedIndex(findIdx);
+            }else {
+                box.addItem(path);
+                box.setSelectedItem(path);
+            }
+            reset();
+        }
+    }
+    
     private void initControl() {
         setMode(MODE_START);
         
@@ -193,38 +262,14 @@ public class StartUp {
         baseSelectPathBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent event) {
-                File old = null;
-                if(!Nullable.isNull(basePathTf.getText())) {
-                    old = new File(basePathTf.getText());
-                }else {
-                    old = new File(".");
-                }
-                
-                chooser.setSelectedFile(old);
-                if(JFileChooser.APPROVE_OPTION == chooser.showOpenDialog(frame)){
-                    File selected = chooser.getSelectedFile();
-                    basePathTf.setText(selected.getAbsolutePath());
-                    reset();
-                }
+                selectAndAddPath(basePathCb);
             }
         });
         
         destSelectPathBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent event) {
-                File old = null;
-                if(!Nullable.isNull(destPathTf.getText())) {
-                    old = new File(destPathTf.getText());
-                }else {
-                    old = new File(".");
-                }
-                
-                chooser.setSelectedFile(old);
-                if(JFileChooser.APPROVE_OPTION == chooser.showOpenDialog(frame)){
-                    File selected = chooser.getSelectedFile();
-                    destPathTf.setText(selected.getAbsolutePath());
-                    reset();
-                }
+                selectAndAddPath(destPathCb);
             }
         });
         
@@ -245,23 +290,20 @@ public class StartUp {
             }
         };
         
-        basePathTf.getDocument().addDocumentListener(docListener);
-        destPathTf.getDocument().addDocumentListener(docListener);
-        
         baseToDestBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent event) {
-                if(Nullable.isNull(basePathTf.getText())) {
+                if(Nullable.isNull((String)basePathCb.getSelectedItem())) {
                     JOptionPane.showMessageDialog(frame, "请选择源目录", "错误", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                if(Nullable.isNull(destPathTf.getText())) {
+                if(Nullable.isNull((String)destPathCb.getSelectedItem())) {
                     JOptionPane.showMessageDialog(frame, "请选择目标目录", "错误", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
                 
-                pathA = new File(basePathTf.getText());
-                pathB = new File(destPathTf.getText());
+                pathA = new File((String)basePathCb.getSelectedItem());
+                pathB = new File((String)destPathCb.getSelectedItem());
                 
                 if(!pathA.exists() || !pathA.isDirectory()) {
                     JOptionPane.showMessageDialog(frame, "源目录不存在或者不是一个目录，请重新选择", "错误", JOptionPane.ERROR_MESSAGE);
@@ -279,17 +321,17 @@ public class StartUp {
         destToBaseBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent event) {
-                if(Nullable.isNull(basePathTf.getText())) {
+                if(Nullable.isNull((String)basePathCb.getSelectedItem())) {
                     JOptionPane.showMessageDialog(frame, "请选择源目录", "错误", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                if(Nullable.isNull(destPathTf.getText())) {
+                if(Nullable.isNull((String)destPathCb.getSelectedItem())) {
                     JOptionPane.showMessageDialog(frame, "请选择目标目录", "错误", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
                 
-                pathA = new File(destPathTf.getText());
-                pathB = new File(basePathTf.getText());
+                pathA = new File((String)destPathCb.getSelectedItem());
+                pathB = new File((String)basePathCb.getSelectedItem());
                 
                 if(!pathA.exists() || !pathA.isDirectory()) {
                     JOptionPane.showMessageDialog(frame, "目标目录不存在或者不是一个目录，请重新选择", "错误", JOptionPane.ERROR_MESSAGE);
@@ -545,9 +587,10 @@ public class StartUp {
         filePanel.add(panel01, BorderLayout.WEST);
         panel01.add(label01);
         
-        basePathTf = new JTextField();
-        panel01.add(basePathTf);
-        basePathTf.setColumns(17);
+        basePathCb = new JComboBox<String>();
+        basePathCb.setModel(new DefaultComboBoxModel<String>(new String[] {"5555555555555555555"}));
+        basePathCb.setEditable(true);
+        panel01.add(basePathCb);
         
         baseSelectPathBtn = new JButton("...");
         panel01.add(baseSelectPathBtn);
@@ -557,9 +600,10 @@ public class StartUp {
         filePanel.add(panel02, BorderLayout.EAST);
         panel02.add(label02);
         
-        destPathTf = new JTextField();
-        panel02.add(destPathTf);
-        destPathTf.setColumns(17);
+        destPathCb = new JComboBox<String>();
+        destPathCb.setModel(new DefaultComboBoxModel<String>(new String[] {"5555555555555555555"}));
+        destPathCb.setEditable(true);
+        panel02.add(destPathCb);
         
         destSelectPathBtn = new JButton("...");
         panel02.add(destSelectPathBtn);
