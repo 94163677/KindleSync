@@ -6,12 +6,13 @@ import java.util.List;
 
 import air.kanna.kindlesync.filter.MutiScanFilter;
 
-public class PathScanner extends MutiScanFilter<File>{
+public class PathScanner extends MutiScanFilter<File> implements FileScanner{
     
     public PathScanner() {
         setMode(ONE_REJECT);
     }
     
+    @Override
     public List<File> scan(File basePath){
         List<File> fileList = new ArrayList<>();
         scan(fileList, basePath, 0);
