@@ -27,11 +27,13 @@ public class FileTypeFilter implements ScanFilter {
         return false;
     }
 
-    public void addType(int type) {
+    public FileTypeFilter addType(int type) {
         acceptType |= type;
+        return this;
     }
     
-    public void delType(int type) {
+    public FileTypeFilter delType(int type) {
         acceptType &= (~type);
+        return this;
     }
 }

@@ -8,6 +8,9 @@ import air.kanna.kindlesync.filter.MutiScanFilter;
 
 public class PathScanner extends MutiScanFilter<File> implements FileScanner{
     
+    private boolean isAddBasePath = true;
+    private boolean isScanDirectoryWhenUnaccept = false;
+    
     public PathScanner() {
         setMode(ONE_REJECT);
     }
@@ -25,15 +28,20 @@ public class PathScanner extends MutiScanFilter<File> implements FileScanner{
         }
         
         if(deep == 0) {
-            fileList.add(basePath);
-            if(!accept(basePath)) {
-                return;
+            if(isAddBasePath) {
+                fileList.add(basePath);
+                if(!accept(basePath)) {
+                    return;
+                }
             }
         }else {
-            if(!accept(basePath)) {
-                return;
+            if(accept(basePath)) {
+                fileList.add(basePath);
+            }else {
+                if(!isScanDirectoryWhenUnaccept) {
+                    return;
+                }
             }
-            fileList.add(basePath);
         }
         
         if(basePath.isDirectory()) {
@@ -52,5 +60,21 @@ public class PathScanner extends MutiScanFilter<File> implements FileScanner{
                 scan(fileList, files[i], deep + 1);
             }
         }
+    }
+
+    public boolean isAddBasePath() {
+        return isAddBasePath;
+    }
+
+    public boolean isScanDirectoryWhenUnaccept() {
+        return isScanDirectoryWhenUnaccept;
+    }
+
+    public void setAddBasePath(boolean isAddBasePath) {
+        this.isAddBasePath = isAddBasePath;
+    }
+
+    public void setScanDirectoryWhenUnaccept(boolean isScanDirectoryWhenUnaccept) {
+        this.isScanDirectoryWhenUnaccept = isScanDirectoryWhenUnaccept;
     }
 }
