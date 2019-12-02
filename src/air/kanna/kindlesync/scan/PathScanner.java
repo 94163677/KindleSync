@@ -38,6 +38,9 @@ public class PathScanner extends MutiScanFilter<File> implements FileScanner{
         
         if(basePath.isDirectory()) {
             File[] files = basePath.listFiles();
+            if(files == null || files.length <= 0){
+            	return;
+            }
             for(int i=0; i<files.length; i++) {
                 if(files[i] == null) {
                     continue;
