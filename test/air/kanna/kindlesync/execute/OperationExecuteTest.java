@@ -4,8 +4,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import air.kanna.kindlesync.compare.FileOperation;
-import air.kanna.kindlesync.compare.FileOperationItem;
+import air.kanna.kindlesync.compare.Operation;
+import air.kanna.kindlesync.compare.OperationItem;
 
 public class OperationExecuteTest {
 
@@ -16,23 +16,23 @@ public class OperationExecuteTest {
         File execRep = new File("D:\\temp\\dssss\\SyosetuSpider001\\.classpath");
         File execDel = new File("D:\\temp\\SyosetuSpider002\\.project");
         
-        List<FileOperationItem> list = new ArrayList<>();
-        FileOperationItem item = null;
+        List<OperationItem> list = new ArrayList<>();
+        OperationItem<File> item = null;
         JaveExecute exec = new JaveExecute();
         
-        item = new FileOperationItem();
-        item.setOperation(FileOperation.ADD);
-        item.setFile(execAdd);
+        item = new OperationItem<>();
+        item.setOperation(Operation.ADD);
+        item.setItem(execAdd);
         list.add(item);
         
-        item = new FileOperationItem();
-        item.setOperation(FileOperation.REP);
-        item.setFile(execRep);
+        item = new OperationItem<>();
+        item.setOperation(Operation.REP);
+        item.setItem(execRep);
         list.add(item);
         
-        item = new FileOperationItem();
-        item.setOperation(FileOperation.DEL);
-        item.setFile(execDel);
+        item = new OperationItem<>();
+        item.setOperation(Operation.DEL);
+        item.setItem(execDel);
         list.add(item);
         
         List<String> result = exec.execute(base, dest, list);

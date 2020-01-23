@@ -1,12 +1,12 @@
 package air.kanna.kindlesync.compare;
 
-public enum FileOperation {
+public enum Operation {
 
     ADD("ADD"), DEL("DELETE"), REP("REPLACE");
     
     private String operCode;
     
-    private FileOperation(String code) {
+    private Operation(String code) {
         operCode = code;
     }
     

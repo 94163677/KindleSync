@@ -1,11 +1,11 @@
 package air.kanna.kindlesync.execute;
 
 import air.kanna.kindlesync.ProcessListener;
-import air.kanna.kindlesync.compare.FileOperationItem;
+import air.kanna.kindlesync.compare.OperationItem;
 import air.kanna.kindlesync.filter.MutiScanFilter;
 
 public abstract class BaseExecuteWithFilterAndListener 
-    extends MutiScanFilter<FileOperationItem>
+    extends MutiScanFilter<OperationItem>
     implements OperationExecute {
 
     protected ProcessListener listener;

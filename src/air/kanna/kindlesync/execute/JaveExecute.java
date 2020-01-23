@@ -8,7 +8,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import air.kanna.kindlesync.compare.FileOperationItem;
+import air.kanna.kindlesync.compare.OperationItem;
 
 public class JaveExecute 
         extends BaseExecuteWithFilterAndListener{
@@ -20,7 +20,7 @@ public class JaveExecute
     }
     
     @Override
-    public List<String> execute(File base, File dest, List<FileOperationItem> operation){
+    public List<String> execute(File base, File dest, List<OperationItem> operation){
         if(base == null || dest == null) {
             throw new NullPointerException("base dir or dest dir is null");
         }
@@ -37,7 +37,7 @@ public class JaveExecute
         String basePath = base.getAbsolutePath();
         String destPath = dest.getAbsolutePath();
         
-        for(FileOperationItem item : operation) {
+        for(OperationItem item : operation) {
             check = checkItem(item);
             if(check != null) {
                 result.add(check);
@@ -63,75 +63,75 @@ public class JaveExecute
         return result;
     }
     
-    private String executeDel(FileOperationItem item) {
+    private String executeDel(OperationItem item) {
         try {
-            if(!item.getFile().delete()) {
+            if(!((File)item.getItem()).delete()) {
                 return "delete faild";
             }
         }catch(Exception e) {
-            logger.error("delete file error: " + item.getFile().getAbsolutePath(), e);
+            logger.error("delete file error: " + ((File)item.getItem()).getAbsolutePath(), e);
             return e.getMessage();
         }
         return null;
     }
     
-    private String executeAdd(String basePath, String destPath, FileOperationItem item) {
+    private String executeAdd(String basePath, String destPath, OperationItem item) {
         try {
-            String execPath = item.getFile().getAbsolutePath();
+            String execPath = ((File)item.getItem()).getAbsolutePath();
             
             execPath = execPath.substring(basePath.length());
             execPath = destPath + execPath;
             
             File addFile = new File(execPath);
             
-            if(item.getFile().isDirectory()) {
+            if(((File)item.getItem()).isDirectory()) {
                 if(!addFile.mkdirs()) {
                     return "cannot create path: " + execPath;
                 }
             }
-            if(item.getFile().isFile()) {
-                Files.copy(item.getFile().toPath(), addFile.toPath(), StandardCopyOption.COPY_ATTRIBUTES);
+            if(((File)item.getItem()).isFile()) {
+                Files.copy(((File)item.getItem()).toPath(), addFile.toPath(), StandardCopyOption.COPY_ATTRIBUTES);
             }
         }catch(Exception e) {
-            logger.error("add file error: " + item.getFile().getAbsolutePath(), e);
+            logger.error("add file error: " + ((File)item.getItem()).getAbsolutePath(), e);
             return e.getMessage();
         }
         return null;
     }
     
-    private String executeRep(String basePath, String destPath, FileOperationItem item) {
+    private String executeRep(String basePath, String destPath, OperationItem item) {
         try {
-            String execPath = item.getFile().getAbsolutePath();
+            String execPath = ((File)item.getItem()).getAbsolutePath();
             
             execPath = execPath.substring(basePath.length());
             execPath = destPath + execPath;
             
             File addFile = new File(execPath);
             
-            if(item.getFile().isDirectory()) {
+            if(((File)item.getItem()).isDirectory()) {
                 return "Directory cannot replace";
             }
-            if(item.getFile().isFile()) {
-                Files.copy(item.getFile().toPath(), addFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+            if(((File)item.getItem()).isFile()) {
+                Files.copy(((File)item.getItem()).toPath(), addFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
             }
         }catch(Exception e) {
-            logger.error("replace file error: " + item.getFile().getAbsolutePath(), e);
+            logger.error("replace file error: " + ((File)item.getItem()).getAbsolutePath(), e);
             return e.getMessage();
         }
         return null;
     }
     
-    private String checkItem(FileOperationItem item) {
+    private String checkItem(OperationItem item) {
         if(item == null) {
             return "NULL";
         }
-        if(item.getFile() == null) {
+        if(((File)item.getItem()) == null) {
             return "NULL FILE";
         }
         if(item.getOperation() == null) {
             return "NULL OPERATION";
         }
-        if(!item.getFile().exists()) {
+        if(!((File)item.getItem()).exists()) {
             return "FILE NOT EXISTS";
         }
         return null;

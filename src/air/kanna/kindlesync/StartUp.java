@@ -36,8 +36,9 @@ import javax.swing.event.DocumentListener;
 import org.apache.log4j.Logger;
 
 import air.kanna.kindlesync.compare.FileListComparer;
-import air.kanna.kindlesync.compare.FileOperation;
-import air.kanna.kindlesync.compare.FileOperationItem;
+import air.kanna.kindlesync.compare.ListComparer;
+import air.kanna.kindlesync.compare.Operation;
+import air.kanna.kindlesync.compare.OperationItem;
 import air.kanna.kindlesync.config.SyncConfig;
 import air.kanna.kindlesync.config.SyncConfigService;
 import air.kanna.kindlesync.config.impl.SyncConfigServicePropertiesImpl;
@@ -64,7 +65,7 @@ public class StartUp {
     private static final int MODE_PROCESS = 3;
     
     private JFrame frame;
-    private JList<FileOperationItem> operResultList;
+    private JList<OperationItem<File>> operResultList;
     private JButton baseSelectPathBtn;
     private JButton destSelectPathBtn;
     private JButton destToBaseBtn;
@@ -82,18 +83,18 @@ public class StartUp {
     private JButton executeBtn;
     
     private JFileChooser chooser;
-    private DefaultListModel<FileOperationItem> listModel;
+    private DefaultListModel<OperationItem<File>> listModel;
     private SyncConfig config;
     private SyncConfigService configService;
     private PathScanner scanner;
-    private FileListComparer comparer;
+    private ListComparer<File> comparer;
     private OperationExecute executer;
     
     private File pathA;
     private File pathB;
     private List<File> fileListA;
     private List<File> fileListB;
-    private List<FileOperationItem> result;
+    private List<OperationItem<File>> result;
     private JProgressBar executeProcess;
     private JLabel processTextTb;
     private JComboBox<String> basePathCb;
@@ -349,11 +350,11 @@ public class StartUp {
         deleteOperBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent event) {
-                List<FileOperationItem> list = operResultList.getSelectedValuesList();
+                List<OperationItem<File>> list = operResultList.getSelectedValuesList();
                 if(list == null || list.size() <= 0) {
                     return;
                 }
-                for(FileOperationItem item : list) {
+                for(OperationItem<File> item : list) {
                     listModel.removeElement(item);
                 }
             }
@@ -363,7 +364,7 @@ public class StartUp {
             @Override
             public void actionPerformed(ActionEvent event) {
                 listModel.clear();
-                for(FileOperationItem item : result) {
+                for(OperationItem item : result) {
                     listModel.addElement(item);
                 }
             }
@@ -378,7 +379,7 @@ public class StartUp {
                 }
                 
                 executeBtn.setEnabled(false);
-                final List<FileOperationItem> executeList = new ArrayList<>();
+                final List<OperationItem> executeList = new ArrayList<>();
                 
                 for(int i=0; i<listModel.size(); i++) {
                     executeList.add(listModel.get(i));
@@ -488,7 +489,7 @@ public class StartUp {
                     StringBuilder sb = new StringBuilder();
                     
                     sb.append(current).append('/').append(max).append("，正在处理：");
-                    sb.append(listModel.get(current).getFile().getName());
+                    sb.append(listModel.get(current).getItem().getName());
                     processTextTb.setText(sb.toString());
                 }
             }
@@ -506,15 +507,16 @@ public class StartUp {
         
         fileListA = scanner.scan(pathA);
         fileListB = scanner.scan(pathB);
-        
-        result = comparer.getCompareResult(pathA, pathB, fileListA, fileListB);
+        ((FileListComparer)comparer).setBasePath(pathA);
+        ((FileListComparer)comparer).setDestPath(pathB);
+        result = comparer.getCompareResult(fileListA, fileListB);
         
         boolean isUnDelete = undeleteCb.isSelected();
         
         listModel.clear();
-        for(FileOperationItem item : result) {
+        for(OperationItem item : result) {
             if(isUnDelete) {
-                if(item.getOperation() != null && item.getOperation() == FileOperation.DEL) {
+                if(item.getOperation() != null && item.getOperation() == Operation.DEL) {
                     continue;
                 }
             }

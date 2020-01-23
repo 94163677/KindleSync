@@ -15,10 +15,12 @@ public class FileListComparerTest {
         
         List<File> list1 = scanner.scan(file1);
         List<File> list2 = scanner.scan(file2);
+        ((FileListComparer)comparer).setBasePath(file1);
+        ((FileListComparer)comparer).setDestPath(file2);
         
-        List<FileOperationItem> result = comparer.getCompareResult(file1, file2, list1, list2);
+        List<OperationItem<File>> result = comparer.getCompareResult(list1, list2);
         
-        for(FileOperationItem item : result) {
+        for(OperationItem item : result) {
             System.out.println(item.toString());
         }
     }
